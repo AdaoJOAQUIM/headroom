@@ -22,6 +22,7 @@ class StoreBackend(Enum):
     """Supported memory store backends."""
 
     SQLITE = "sqlite"
+    SUPABASE = "supabase"  # Postgres + pgvector via PostgREST (cross-project memory)
     EXTERNAL = "external"  # Loaded from entry_points(group="headroom.memory_store")
 
 
@@ -31,6 +32,7 @@ class VectorBackend(Enum):
     AUTO = "auto"  # Auto-select: SQLITE_VEC if available, else HNSW
     SQLITE_VEC = "sqlite_vec"  # SQLite-based, bounded memory, recommended
     HNSW = "hnsw"  # hnswlib-based, unbounded unless max_entries set
+    SUPABASE = "supabase"  # pgvector via the match_headroom_memories RPC
     EXTERNAL = "external"  # Loaded from entry_points(group="headroom.memory_vector")
 
 
@@ -99,6 +101,14 @@ class MemoryConfig:
     store_backend: StoreBackend = StoreBackend.SQLITE
     store_backend_name: str | None = None  # Required when store_backend == EXTERNAL
     db_path: Path = field(default_factory=lambda: Path("headroom_memory.db"))
+
+    # Supabase backend (store_backend / vector_backend == SUPABASE). When unset,
+    # the adapter falls back to HEADROOM_SUPABASE_URL / HEADROOM_SUPABASE_KEY /
+    # HEADROOM_SUPABASE_MEMORY_TABLE env vars. Apply sql/create_memory_supabase.sql
+    # to the project first.
+    supabase_url: str | None = None
+    supabase_key: str | None = None
+    supabase_table: str | None = None  # Defaults to "headroom_memories"
 
     # Vector index
     vector_backend: VectorBackend = VectorBackend.AUTO  # Auto-select best available

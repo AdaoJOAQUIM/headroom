@@ -130,6 +130,11 @@ def _create_store(config: MemoryConfig) -> MemoryStore:
 
         return SQLiteMemoryStore(config.db_path)
 
+    if config.store_backend == StoreBackend.SUPABASE:
+        from headroom.memory.adapters.supabase_store import SupabaseMemoryStore
+
+        return SupabaseMemoryStore(config)
+
     if config.store_backend == StoreBackend.EXTERNAL:
         return _load_external_backend(  # type: ignore[no-any-return]
             _MEMORY_STORE_GROUP,
@@ -256,6 +261,11 @@ def _create_vector_index(config: MemoryConfig) -> VectorIndex:
                 "  pip install hnswlib      (alternative)\n"
                 "Or install the full proxy bundle: pip install headroom-ai[proxy]"
             )
+
+    if backend == VectorBackend.SUPABASE:
+        from headroom.memory.adapters.supabase_store import SupabaseVectorIndex
+
+        return SupabaseVectorIndex(config)
 
     if backend == VectorBackend.SQLITE_VEC:
         from headroom.memory.adapters import SQLITE_VEC_AVAILABLE
