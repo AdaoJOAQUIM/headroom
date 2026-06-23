@@ -23,7 +23,7 @@ implements those Protocols against Supabase:
 
 | Role | Local default | Supabase backend |
 |------|---------------|------------------|
-| **Compressor** (token saving) | Rust/Python pipeline | unchanged — stays local |
+| **Compressor** (token saving) | Rust/Python pipeline | reversible JS port in the `headroom-compress` Edge Function (heavy ML stays local) |
 | **MemoryStore** (persistence) | SQLite | `headroom_memories` table |
 | **VectorIndex** (retrieval / context reconstruction) | sqlite-vec / hnsw | `embedding vector` + `match_headroom_memories` RPC |
 | **GraphStore** (knowledge graph / patterns) | SQLite graph | `headroom_entities` + `headroom_relationships` |
@@ -72,6 +72,27 @@ API.
   vector.
 - **Tests** — `tests/test_memory_supabase_store.py` (serialization, filter
   translation, embedding conversion; network-free).
+
+## The compression engine, inside Supabase
+
+`supabase/functions/headroom-compress/` + `_shared/headroom_compress.ts` port
+the **reversible** subset of Headroom's compression to TypeScript so it runs as
+an Edge Function: structure-preserving JSON compression (keys/brackets/booleans/
+identifiers kept; bulky values and long array tails elided into a reference
+table) and consecutive-line de-duplication for logs/text. `restore()`
+reconstructs the original exactly — verified by
+`_shared/headroom_compress.test.ts` (2×–18× shrink on typical payloads).
+
+When called with `store=true`, the reference table is persisted to
+`headroom_compression_store` (Supabase's CCR analog; see
+`sql/create_compression_store_supabase.sql`) and the caller gets back a
+`ref_id` instead of the refs — so a later `restore` needs only the compressed
+text and the id.
+
+**What deliberately does not move:** the Rust core, the Kompress neural
+compressor, and Magika ML detection cannot run on Supabase's Deno/Postgres
+runtime and stay local in Headroom. This is the hybrid split, packaged as one
+deployable module — see `supabase/functions/README.md`.
 
 ## Configuration
 

@@ -1,0 +1,28 @@
+# Supabase module configuration for Headroom.
+#
+# Deploy the whole module with the Supabase CLI:
+#   supabase link --project-ref <your-project-ref>
+#   supabase db push                       # applies sql/ migrations (or paste them
+#                                          # into the SQL Editor)
+#   supabase functions deploy headroom-compress
+#   supabase functions deploy memory-recall
+#
+# What lives in Supabase (this module):
+#   * Cognitive memory      -> headroom_memories (+ pgvector RPC), entities, relationships
+#   * Compression engine     -> headroom-compress Edge Function (reversible JSON/text)
+#   * CCR store              -> headroom_compression_store
+#   * Telemetry              -> proxy_telemetry_v2 (existing)
+#
+# What stays local in Headroom (cannot run on Supabase's Deno/Postgres runtime):
+#   * The Rust compression core and the Kompress ML model
+#   * Magika ML content detection
+#   * The proxy / MCP server / Python package
+
+project_id = "headroom"
+
+[functions.headroom-compress]
+# Called by the local Headroom client with its own key; no end-user JWT.
+verify_jwt = false
+
+[functions.memory-recall]
+verify_jwt = false
